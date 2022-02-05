@@ -1,0 +1,19 @@
+Notes on how the coordinate systems match from Leslie's simulation to the nexus simulation
+
+
+NEXUS:
+x = 0 -> beta = 0 deg
+z =0 -> beta = 90 deg
+North -> beta = 140 deg
+South -> beta = 320 deg
+-
+Leslie coordinate system:
+x = 0 -> beta = 0
+z = 0 -> beta = 270 deg
+North -> beta = 220 deg
+South -> beta = 40 deg
+-
+So nexus azimuth ("beta") spins in the opsite diretion to your beta.
+-
+To go from north to x = 0 we must rotate by -140 degrees if we are using nexus angles.
+To go from x = 0 in Leslie Coordinate system to north in NEXUS system if we  must add 220 deg then swap the direction of beta.
