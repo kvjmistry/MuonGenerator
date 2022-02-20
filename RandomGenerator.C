@@ -7,6 +7,7 @@
 
 void GenerateRandom(std::vector<double> weights, std::vector<double> azimuth, std::vector<double> zenith, TH2D* hist, TH2D* histXY, TH2D* histXZ, TH2D* histYZ){
 
+    gStyle->SetOptStat(0);
 
     // Discrete distribution with bin index and intensity to sample from
     std::discrete_distribution<int> dist(std::begin(weights), std::end(weights));
@@ -151,8 +152,11 @@ void RandomGenerator(){
 
     // Try C++ implementation
     std::vector<double> weights = {}; // Intensity in a given azimuth/zenith Bin
-    std::vector<double> azimuth = {}; // List of Azimuth bin centers
-    std::vector<double> zenith = {};  // List of Zenith bin centers
+    std::vector<double> azimuth = {}; // List of Azimuth values
+    std::vector<double> zenith = {};  // List of Zenith values
+    std::vector<double> azimuth_bins = {}; // List of Azimuth bin edges
+    std::vector<double> zenith_bins = {};  // List of Zenith bin edges
+
     
     // Histogram for testing if random number generator is working
     TH2D* hist_cpp = new TH2D("hist_cpp", ";Azimuth; Zenith", hist->GetNbinsX(), 0, 2.0 ,hist->GetNbinsY(), 0, 0.5);
@@ -172,26 +176,6 @@ void RandomGenerator(){
     hist_cpp->Draw("colz");
 
 
-    // Histogram for testing if random number generator is working
-    double binEdges_azi[] = {0.        , 0.21666156, 0.43332312, 0.64998469, 0.86664625, 1.08330781,
-                             1.29996937, 1.51663094, 1.7332925 , 1.94995406, 2.16661562, 2.38327719,
-                             2.59993875, 2.81660031, 3.03326187, 3.24992343, 3.466585  , 3.68324656,
-                             3.89990812, 4.11656968, 4.33323125, 4.54989281, 4.76655437, 4.98321593,
-                             5.1998775 , 5.41653906, 5.63320062, 5.84986218, 6.06652374, 6.28318531 };
-
-    double binEdges_zeni[] = {0.        , 0.20033484, 0.28379411, 0.34816602, 0.40271584, 0.45102681,
-                              0.49493413, 0.53552665, 0.5735131 , 0.60938531, 0.64350111, 0.67613051,
-                              0.70748321, 0.73772597, 0.76699401, 0.79539883, 0.82303369, 0.84997757,
-                              0.87629806, 0.90205362, 0.92729522, 0.95206764, 0.97641053, 1.00035922,
-                              1.02394538, 1.04719755, 1.07014161, 1.09280113, 1.11519765, 1.13735101,
-                              1.15927948};
-
-
-    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", 29, binEdges_azi , 30, binEdges_zeni);
-    TH2D* histXY_cpp2 = new TH2D("histXY_cpp2", ";X; Y", 100, -1, 1 , 50, -1, 0 );
-    TH2D* histXZ_cpp2 = new TH2D("histXZ_cpp2", ";X; Z", 100, -1, 1 , 100, -1, 1 );
-    TH2D* histYZ_cpp2 = new TH2D("histYZ_cpp2", ";Y; Z", 50, -1, 0 , 100, -1, 1 );
-
     // File pointer
     // std::ifstream fin("MeasuredMuonsFromData.csv");
     std::ifstream fin("SimulatedMuonsFromProposal.csv");
@@ -208,14 +192,41 @@ void RandomGenerator(){
     while (fin.peek()!=EOF) {
   
         std::getline(fin, s_intensity, ',');
-        std::getline(fin, s_beta, ',');
-        std::getline(fin, s_alpha, '\n');
 
-        intensity.push_back(stod(s_intensity));
-        beta.push_back(stod(s_beta));
-        alpha.push_back(stod(s_alpha));
+        // Load in alpha/zenith bin edges
+        if (s_intensity == "alpha" || s_intensity == "zenith"){
+            std::getline(fin, s_alpha, '\n');
+            zenith_bins.push_back(stod(s_alpha));
+        }
+        // Load in beta/azimuth bin edges
+        else if (s_intensity == "beta" || s_intensity == "azimuth"){
+            std::getline(fin, s_beta, '\n');
+            azimuth_bins.push_back(stod(s_beta));
+        }
+        // Load in the histogram values
+        else {
+            std::getline(fin, s_beta, ',');
+            std::getline(fin, s_alpha, '\n');
+
+            intensity.push_back(stod(s_intensity));
+            beta.push_back(stod(s_beta));
+            alpha.push_back(stod(s_alpha));
+        }
+
 
     }
+
+    int const nbins_zeni = zenith_bins.size()-1;
+    double* edges_zeni = &zenith_bins[0]; // Cast to an array
+    
+    int const nbins_azimuth = azimuth_bins.size()-1;
+    double* edges_azimuth = &azimuth_bins[0]; // Cast to an array 
+
+
+    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
+    TH2D* histXY_cpp2 = new TH2D("histXY_cpp2", ";X; Y", 100, -1, 1 , 50, -1, 0 );
+    TH2D* histXZ_cpp2 = new TH2D("histXZ_cpp2", ";X; Z", 100, -1, 1 , 100, -1, 1 );
+    TH2D* histYZ_cpp2 = new TH2D("histYZ_cpp2", ";Y; Z", 50, -1, 0 , 100, -1, 1 );
 
     GenerateRandom(intensity, beta, alpha, hist_cpp2, histXY_cpp2, histXZ_cpp2, histYZ_cpp2);
 
