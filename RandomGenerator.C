@@ -69,11 +69,11 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> azimuth, st
 
         // Create random number generator to smear bins by a small amount in azimuth and zenith
         std::default_random_engine gen_gauss_azi;
-        gen_gauss_azi.seed(time(0)*index);
+        gen_gauss_azi.seed(1723+index);
         std::normal_distribution<double> dist_azi(0, smear_pct_a);
 
         std::default_random_engine gen_gauss_zeni;
-        gen_gauss_zeni.seed(time(0)*index+100); // Extra factor 100 to keep the seeds unique
+        gen_gauss_zeni.seed(1723+index+3.0e4); // Extra factor 3e4 to keep the seeds unique
         std::normal_distribution<double> dist_zeni(0, smear_pct_z);
         
         // Get the Gaussian smear values
@@ -164,9 +164,9 @@ void RandomGenerator(){
     
 
     // File pointer
-    // std::ifstream fin("MeasuredMuonsFromData.csv");
+    std::ifstream fin("MeasuredMuonsFromData.csv");
     // std::ifstream fin("SimulatedMuonsFromProposal.csv");
-    std::ifstream fin("MuonAnaAllRuns.csv");
+    // std::ifstream fin("MuonAnaAllRuns.csv");
     
     // Check if file has opened properly
     if (!fin.is_open())
