@@ -1,11 +1,21 @@
-// Test code to generate random Numbers 
 #include <random>
 #include <vector>
 #include "TH2.h"
 #include "TRotation.h"
 #include "TVector3.h"
 
+/* 
+This code will read in a csv file containing muon events in zenith and azimuth
+and will sample the distribution to for generating events. A check is made to 
+the existing GetRandom function which is used in root. Events are smeared based
+on the bin widths via a Gaussian to avoid binning artifacts in the generation of
+the events 
+*/
+
 double pi = 3.14159;
+
+// SEEDING in NEXUS:
+// std::cout << "Krish: The RN is:" << CLHEP::HepRandom::getTheSeed() << " " << event->GetEventID() << std::endl;
 
 // Get the bin widths to smear the events by
 std::vector<double> GetSmearBins(std::vector<double> bins){
@@ -103,7 +113,7 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> azimuth, st
 }
 
 
-
+// Main
 void RandomGenerator(){
 
     // Load in the histogram
@@ -184,12 +194,12 @@ void RandomGenerator(){
         std::getline(fin, s_intensity, ',');
 
         // Load in alpha/zenith bin edges
-        if (s_intensity == "alpha" || s_intensity == "zenith"){
+        if (s_intensity == "zenith"){
             std::getline(fin, s_alpha, '\n');
             zenith_bins.push_back(stod(s_alpha));
         }
         // Load in beta/azimuth bin edges
-        else if (s_intensity == "beta" || s_intensity == "azimuth"){
+        else if (s_intensity == "azimuth"){
             std::getline(fin, s_beta, '\n');
             azimuth_bins.push_back(stod(s_beta));
         }
