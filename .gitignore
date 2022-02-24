@@ -1,2 +1,4 @@
 .vscode
-LinInterps.pkl
+*.pkl
+MuonAnaAllRuns.csv
+SimulatedMuonsFromProposal.csv

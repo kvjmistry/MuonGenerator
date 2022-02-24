@@ -29,10 +29,10 @@ void ConvertGammaHists(){
 
                 std::ofstream myfile;
                     
-                    fname.ReplaceAll(".root", "");
-                    myfile.open (Form("csv/%s.csv", fname.Data()));
+                fname.ReplaceAll(".root", "");
+                myfile.open (Form("csv/%s.csv", fname.Data()));
 
-                // Loop over the bins
+                // Loop over the bins and add values to file
                 for (unsigned int bin = 1; bin < h->GetNbinsX()+1;bin++){
                     
                     if (bin == 1)
