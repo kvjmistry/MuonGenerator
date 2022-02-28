@@ -18,87 +18,89 @@ double pi = 3.14159;
 // std::cout << "Krish: The RN is:" << CLHEP::HepRandom::getTheSeed() << " " << event->GetEventID() << std::endl;
 
 // Get the bin widths to smear the events by
-std::vector<double> GetSmearBins(std::vector<double> bins){
+std::vector<double> GetBinWidths(std::vector<double> bins){
 
-    std::vector<double> smears = {};
+    // Vector of Bin Widths
+    std::vector<double> BW = {};
 
     for (int i = 0; i < bins.size(); i++){
-        smears.push_back((bins[i+1] - bins[i]));
+        BW.push_back((bins[i+1] - bins[i]));
     }
 
-    return smears;
+    return BW;
 
 }
 
-void GenerateRandom(std::vector<double> weights, std::vector<double> azimuth, std::vector<double> zenith, std::vector<double> azi_edges, std::vector<double> zeni_edges, TH2D* hist, TH2D* histXY, TH2D* histXZ, TH2D* histYZ){
+void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::vector<double> zen, std::vector<double> az_edges, std::vector<double> zen_edges, TH2D* hist, TH2D* histXY, TH2D* histXZ, TH2D* histYZ){
 
     gStyle->SetOptStat(0);
 
     // Discrete distribution with bin index and intensity to sample from
-    std::discrete_distribution<int> dist(std::begin(weights), std::end(weights));
-    std::default_random_engine gen;  // Generator
-    gen.seed(time(0)); // Seed with the current time for uniqueness
-    int N_samp = 1e6;
+    std::discrete_distribution<int> discr_dist(std::begin(weights), std::end(weights));
+    std::mt19937 RN_engine;  // Random Number Generator Engine
+    RN_engine.seed(17392); // Seed with the current time
+
+    // Create random number generator to smear bins by a small amount in azimuth and zenith
+    std::mt19937 RN_engine_az;
+    RN_engine_az.seed(17392+1);
+
+    std::mt19937 RN_engine_zen;
+    RN_engine_zen.seed(17392+2); // Extra factor 3e4 to keep the seeds unique
+    
+    int N_samp = 2000;
     std::vector<int> samples(N_samp);
 
-     // Rotate the azimuth and zenith
+    // Rotate the azimuth and zenith
     TRotation *rPhi = new TRotation();
-    rPhi->RotateY(-140);
+    rPhi->RotateY(-140* pi/180);
 
     
-    std::vector<double> azi_smears = GetSmearBins(azi_edges);
-    std::vector<double> zeni_smears = GetSmearBins(zeni_edges);
+    std::vector<double> az_BW  = GetBinWidths(az_edges);
+    std::vector<double> zen_BW   = GetBinWidths(zen_edges);
 
-    double smear_pct_z{0.00}; // Percentage to smear the zenith values by
-    double smear_pct_a{0.00}; // Percentage to smear the azimuth values by
+    double zen_BW_smear{0.00}; // Amount to smear the randomly sampled zenith values by
+    double az_BW_smear{0.00};  // Amount to smear the randomly sampled azimuth values by
 
     TVector3 dir;
 
     // Index to set a unique seed to the generator
     int index = 0;
 
-    for (auto & ran_idx: samples){
+    for (auto & RN_indx: samples){
 
         // Generate random index weighted by the bin contents
-        ran_idx = dist(gen);
+        RN_indx = discr_dist(RN_engine);
 
-        // Loop over the zenith values and find the appropriate smear value
-        for (int i = 0; i < zeni_edges.size()-1; i++){
-            if (zenith.at(ran_idx) >= zeni_edges.at(i) && zenith.at(ran_idx) < zeni_edges.at(i+1)){
-                smear_pct_z = zeni_smears.at(i);
+        // Loop over the zenith values and find the corresponding bin width to smear
+        for (int i = 0; i < zen_edges.size()-1; i++){
+            if (zen.at(RN_indx) >= zen_edges.at(i) && zen.at(RN_indx) < zen_edges.at(i+1)){
+                zen_BW_smear = zen_BW.at(i);
             }
         }
 
-        // Loop over the azimuth values and find the appropriate smear value
-        for (int i = 0; i < azi_edges.size()-1; i++){
-            if (azimuth.at(ran_idx) >= azi_edges.at(i) && azimuth.at(ran_idx) < azi_edges.at(i+1)){
-                smear_pct_a = azi_smears.at(i);
+        // Loop over the azimuth values and find the corresponding bin width to smear
+        for (int i = 0; i < az_edges.size()-1; i++){
+            if (az.at(RN_indx) >= az_edges.at(i) && az.at(RN_indx) < az_edges.at(i+1)){
+                az_BW_smear = az_BW.at(i);
             }
         }
 
-
-        // Create random number generator to smear bins by a small amount in azimuth and zenith
-        std::default_random_engine gen_gauss_azi;
-        gen_gauss_azi.seed(1723+index);
-        std::normal_distribution<double> dist_azi(0, smear_pct_a);
-
-        std::default_random_engine gen_gauss_zeni;
-        gen_gauss_zeni.seed(1723+index+3.0e4); // Extra factor 3e4 to keep the seeds unique
-        std::normal_distribution<double> dist_zeni(0, smear_pct_z);
+        std::normal_distribution<double> dist_az(0, az_BW_smear);
+        std::normal_distribution<double> dist_zen(0, zen_BW_smear);
         
         // Get the Gaussian smear values
-        double smear_azi  = dist_azi(gen_gauss_azi);
-        double smear_zeni = dist_zeni(gen_gauss_zeni);
+        double az_smear  = dist_az(RN_engine_az);
+        double zen_smear = dist_zen(RN_engine_zen);
 
-        double a_ = azimuth.at(ran_idx)+smear_azi;
-        double z_ = zenith.at(ran_idx)+smear_zeni;
+        double az_samp = az.at(RN_indx)+az_smear;
+        double zen_samp = zen.at(RN_indx)+zen_smear;
         
         // Fill histogram
-        hist->Fill(a_, z_);
+        hist->Fill(az_samp, zen_samp);
 
-        dir.SetX(sin(z_) * sin(a_));
-        dir.SetY(-cos(z_));
-        dir.SetZ(-sin(z_) * cos(a_));
+        dir.SetX(sin(zen_samp) * sin(az_samp));
+        dir.SetY(-cos(zen_samp));
+        dir.SetZ(-sin(zen_samp) * cos(az_samp));
 
         dir *= *rPhi;
 
@@ -131,7 +133,7 @@ void RandomGenerator(){
 
     // Rotate the azimuth and zenith
     TRotation *rPhi = new TRotation();
-    rPhi->RotateY(-140);
+    rPhi->RotateY(-140*pi/180);
     
     TVector3 dir;
 
@@ -174,9 +176,9 @@ void RandomGenerator(){
     
 
     // File pointer
-    std::ifstream fin("MeasuredMuonsFromData.csv");
+    // std::ifstream fin("MeasuredMuonsFromData.csv");
     // std::ifstream fin("SimulatedMuonsFromProposal.csv");
-    // std::ifstream fin("MuonAnaAllRuns.csv");
+    std::ifstream fin("MuonAnaAllRuns.csv");
     
     // Check if file has opened properly
     if (!fin.is_open())
@@ -241,6 +243,5 @@ void RandomGenerator(){
 
     TCanvas *cYZ_cpp2 = new TCanvas();
     histYZ_cpp2->Draw("colz");
-
 
 }

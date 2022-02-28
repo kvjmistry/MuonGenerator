@@ -28,8 +28,8 @@ void Hist_to_CSV(){
     for (unsigned int row = 1; row < hist->GetNbinsX()+1; row++){
         for (unsigned int col = 1; col < hist->GetNbinsY()+1; col++){
             weights.push_back(hist->GetBinContent(row, col));
-            azimuth.push_back(hist->GetXaxis()->GetBinCenter(row+1)*pi);
-            zenith.push_back(hist->GetYaxis()->GetBinCenter(col+1)*pi);
+            azimuth.push_back(hist->GetXaxis()->GetBinCenter(row)*pi);
+            zenith.push_back(hist->GetYaxis()->GetBinCenter(col)*pi);
 
             if (row == 1){
                 zenith_bins.push_back(hist->GetYaxis()->GetBinLowEdge(col)*pi);
