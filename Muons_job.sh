@@ -41,7 +41,7 @@ for i in {1..2}; do
 	nexus -n 5000 NEXT100_muons_hallA.init.mac 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
 
 	# Rename the output file
-	python slim_file.py "Next100Muons_hallA_example.next.h5" "$(basename Next100Muons_hallA_example.next.h5 .next.h5)_${SLURM_ARRAY_TASK_ID}_$i.next.h5"
+	python ~/packages/MuonGenerator/slim_file.py "Next100Muons_hallA_example.next.h5" "$(basename Next100Muons_hallA_example.next.h5 .next.h5)_${SLURM_ARRAY_TASK_ID}_$i.next.h5"
 	#mv Next100Muons_hallA_example.next.h5 "$(basename Next100Muons_hallA_example.next.h5 .next.h5)_${SLURM_ARRAY_TASK_ID}_$i.next.h5"
 	echo; echo; echo;
 done
