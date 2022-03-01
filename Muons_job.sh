@@ -22,7 +22,7 @@ cp ~/packages/nexus/macros/physics/Xe137.mac .
 cp ~/packages/nexus/data/MuonAnaAllRuns.csv .
 
 # Edit the file configs
-sed -i "s#.*outputFile.*#/nexus/persistency/outputFile Next100Muons_hallA_example.next.h5#" NEXT100_muons_hallA.config.mac
+sed -i "s#.*outputFile.*#/nexus/persistency/outputFile Next100Muons_hallA_example.next#" NEXT100_muons_hallA.config.mac
 
 # Setup nexus and run
 echo "Setting Up NEXUS" 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
