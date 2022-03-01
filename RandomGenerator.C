@@ -47,7 +47,7 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
     std::mt19937 RN_engine_zen;
     RN_engine_zen.seed(17392+2); // Extra factor 3e4 to keep the seeds unique
     
-    int N_samp = 2000;
+    int N_samp = 1e5;
     std::vector<int> samples(N_samp);
 
     // Rotate the azimuth and zenith
@@ -176,9 +176,13 @@ void RandomGenerator(){
     
 
     // File pointer
+    
+    // Simulated muons from MCeQ
+    std::ifstream fin("SimulatedMuonsProposalMCEq.csv");
+    
+    // Note these are equivalent!!
     // std::ifstream fin("MeasuredMuonsFromData.csv");
-    // std::ifstream fin("SimulatedMuonsFromProposal.csv");
-    std::ifstream fin("MuonAnaAllRuns.csv");
+    // std::ifstream fin("MuonAnaAllRuns.csv");
     
     // Check if file has opened properly
     if (!fin.is_open())
