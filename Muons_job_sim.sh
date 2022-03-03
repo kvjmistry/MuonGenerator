@@ -12,17 +12,18 @@ start=`date +%s`
 
 # Create the directory
 cd $SCRATCH/guenette_lab/Users/$USER/
-mkdir -p Muons/jobid_"${SLURM_ARRAY_TASK_ID}"
-cd Muons/jobid_"${SLURM_ARRAY_TASK_ID}"
+mkdir -p Muons/sim/jobid_"${SLURM_ARRAY_TASK_ID}"
+cd Muons/sim/jobid_"${SLURM_ARRAY_TASK_ID}"
 
 # Copy the files over
 cp ~/packages/MuonGenerator/macros_/NEXT100_muons_hallA.config.mac .
 cp ~/packages/MuonGenerator/macros_/NEXT100_muons_hallA.init.mac .
 cp ~/packages/nexus/macros/physics/Xe137.mac .
-cp ~/packages/nexus/data/MuonAnaAllRuns.csv .
+cp ~/packages/nexus/data/SimulatedMuonsProposalMCEq.csv .
 
 # Edit the file configs
 sed -i "s#.*outputFile.*#/nexus/persistency/outputFile Next100Muons_hallA_example.next#" NEXT100_muons_hallA.config.mac
+sed -i "s#.*angle_file.*#/Generator/MuonAngleGenerator/angle_file SimulatedMuonsProposalMCEq.csv#" NEXT100_muons_hallA.config.mac
 
 # Setup nexus and run
 echo "Setting Up NEXUS" 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
@@ -32,17 +33,16 @@ source ~/packages/nexus/setup_nexus.sh
 source ~/packages/IC/setup_IC.sh
 
 echo "Running NEXUS" 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
-for i in {1..2}; do
+for i in {1..10}; do
 
 	# Replace the seed in the file	
 	echo "The seed number is: $((1111111*${SLURM_ARRAY_TASK_ID}+$i))" 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
 	sed -i "s#.*random_seed.*#/nexus/random_seed $((1111111*${SLURM_ARRAY_TASK_ID}+$i))#" NEXT100_muons_hallA.config.mac
 	
-	nexus -n 5000 NEXT100_muons_hallA.init.mac 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
+	nexus -n 1000 NEXT100_muons_hallA.init.mac 2>&1 | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
 
 	# Rename the output file
-	python ~/packages/MuonGenerator/slim_file.py "Next100Muons_hallA_example.next.h5" "$(basename Next100Muons_hallA_example.next.h5 .next.h5)_${SLURM_ARRAY_TASK_ID}_$i.next.h5"
-	#mv Next100Muons_hallA_example.next.h5 "$(basename Next100Muons_hallA_example.next.h5 .next.h5)_${SLURM_ARRAY_TASK_ID}_$i.next.h5"
+	python ~/packages/MuonGenerator/slim_file.py "Next100Muons_hallA_example.next.h5" "$(basename Next100Muons_hallA_example.next.h5 .next.h5)_${SLURM_ARRAY_TASK_ID}_$i.next.h5" | tee -a log_nexus_"${SLURM_ARRAY_TASK_ID}".txt
 	echo; echo; echo;
 done
 
