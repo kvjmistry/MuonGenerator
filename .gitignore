@@ -1,4 +1,4 @@
 .vscode
 *.pkl
 MuonAnaAllRuns.csv
-SimulatedMuonsFromProposal.csv
+SimulatedMuonsProposalMCEq.csv
