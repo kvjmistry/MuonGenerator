@@ -22,17 +22,18 @@ void Hist_to_CSV(){
 
     
     // Histogram for testing if random number generator is working
-    TH2D* hist_cpp = new TH2D("hist_cpp", ";Azimuth; Zenith", hist->GetNbinsX(), 0, 2.0 ,hist->GetNbinsY(), 0, 0.5);
+    TH2D* hist_cpp = new TH2D("hist_cpp", ";Azimuth; Zenith", hist->GetNbinsX(), 0, 2.0*pi ,hist->GetNbinsY(), 0, 0.5*pi);
 
     // Get Bin Weights, azimuth and zenith values into a vector
     for (unsigned int row = 1; row < hist->GetNbinsX()+1; row++){
-        for (unsigned int col = 1; col < hist->GetNbinsY()+1; col++){
+        for (unsigned int col = 2; col < hist->GetNbinsY()+1; col++){
             weights.push_back(hist->GetBinContent(row, col));
             azimuth.push_back(hist->GetXaxis()->GetBinCenter(row)*pi);
             zenith.push_back(hist->GetYaxis()->GetBinCenter(col)*pi);
 
             if (row == 1){
                 zenith_bins.push_back(hist->GetYaxis()->GetBinLowEdge(col)*pi);
+                // std::cout << hist->GetYaxis()->GetBinLowEdge(col+1)<< std::endl;
 
                 // Add the final bin edge
                 if (col == hist->GetNbinsY())
@@ -66,5 +67,14 @@ void Hist_to_CSV(){
     }
 
     myfile.close();
+
+    for (unsigned int i = 0; i < weights.size(); i++){
+        hist_cpp->Fill(azimuth.at(i), zenith.at(i), weights.at(i));
+    }
+
+    TCanvas *c = new TCanvas();
+    hist_cpp->Divide(hist);
+    hist_cpp->Draw("COLZ");
+
 
 }
