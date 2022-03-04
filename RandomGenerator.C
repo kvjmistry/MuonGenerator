@@ -23,8 +23,9 @@ std::vector<double> GetBinWidths(std::vector<double> bins){
     // Vector of Bin Widths
     std::vector<double> BW = {};
 
-    for (int i = 0; i < bins.size(); i++){
-        BW.push_back((bins[i+1] - bins[i]));
+    for (int i = 0; i < bins.size()-1; i++){
+        BW.push_back((bins.at(i+1) - bins[i]));
+        // std::cout << bins[i] << std::endl;
     }
 
     return BW;
@@ -47,7 +48,7 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
     std::mt19937 RN_engine_zen;
     RN_engine_zen.seed(17392+2); // Extra factor 3e4 to keep the seeds unique
     
-    int N_samp = 1e5;
+    int N_samp = 1e7;
     std::vector<int> samples(N_samp);
 
     // Rotate the azimuth and zenith
@@ -58,8 +59,8 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
     std::vector<double> az_BW  = GetBinWidths(az_edges);
     std::vector<double> zen_BW   = GetBinWidths(zen_edges);
 
-    double zen_BW_smear{0.00}; // Amount to smear the randomly sampled zenith values by
-    double az_BW_smear{0.00};  // Amount to smear the randomly sampled azimuth values by
+    double zen_BW_smear{1.0e6}; // Amount to smear the randomly sampled zenith values by
+    double az_BW_smear{1.0e6};  // Amount to smear the randomly sampled azimuth values by
 
     TVector3 dir;
 
@@ -68,32 +69,81 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
 
     for (auto & RN_indx: samples){
 
-        // Generate random index weighted by the bin contents
-        RN_indx = discr_dist(RN_engine);
+        bool invalid_evt = true;
+        double az_smear = 0.0;
+        double zen_smear = 0.0;
+        double az_samp = 0.0;
+        double zen_samp = 0.0;
 
-        // Loop over the zenith values and find the corresponding bin width to smear
-        for (int i = 0; i < zen_edges.size()-1; i++){
-            if (zen.at(RN_indx) >= zen_edges.at(i) && zen.at(RN_indx) < zen_edges.at(i+1)){
-                zen_BW_smear = zen_BW.at(i);
+        while(invalid_evt){
+
+            // Generate random index weighted by the bin contents
+            RN_indx = discr_dist(RN_engine);
+
+            // Loop over the zenith values and find the corresponding bin width to smear
+            for (int i = 0; i < zen_edges.size()-1; i++){
+
+                // Catch very last bin
+                if (zen_BW_smear == 1e6 && i == zen_edges.size()-2){
+                    if (zen[RN_indx] >= zen_edges[i] 
+                        && zen[RN_indx] <= zen_edges[i+1]){
+                    
+                        zen_BW_smear = zen_BW[i];
+                    }
+                }
+                else {
+                    if (zen[RN_indx] >= zen_edges[i] 
+                        && zen[RN_indx] < zen_edges[i+1]){
+                        
+                        zen_BW_smear = zen_BW[i];
+
+                    }
+                }
+
             }
-        }
 
-        // Loop over the azimuth values and find the corresponding bin width to smear
-        for (int i = 0; i < az_edges.size()-1; i++){
-            if (az.at(RN_indx) >= az_edges.at(i) && az.at(RN_indx) < az_edges.at(i+1)){
-                az_BW_smear = az_BW.at(i);
+            // Loop over the azimuth values and find the corresponding bin width to smear
+            for (int i = 0; i < az_edges.size()-1; i++){
+                // Include last bin in check
+                if (az_BW_smear == 1e6 && i == az_edges.size()-2){
+                    if (az[RN_indx] >= az_edges[i] 
+                        && az[RN_indx] <= az_edges[i+1]){
+                    
+                        az_BW_smear = az_BW[i];
+
+                    }
+                }
+                else {
+
+                    if (az[RN_indx] >= az_edges[i] 
+                        && az[RN_indx] < az_edges[i+1]){
+                        
+                        az_BW_smear = az_BW[i];
+
+                    }
+                }
+
             }
+
+            if (az_BW_smear == 1.0e6 || zen_BW_smear == 1.0e6 )
+                std::cout << "Error BW not set" << std::endl;
+
+            std::normal_distribution<double> dist_az(0, az_BW_smear);
+            std::normal_distribution<double> dist_zen(0, zen_BW_smear);
+            
+            // Get the Gaussian smear values
+            az_smear  = dist_az(RN_engine_az);
+            zen_smear = dist_zen(RN_engine_zen);
+
+            az_samp = az.at(RN_indx)+az_smear;
+            zen_samp = zen.at(RN_indx)+zen_smear;
+
+            if (zen_samp < 0.0){
+                invalid_evt = true;
+            }
+            else
+                invalid_evt = false;
         }
-
-        std::normal_distribution<double> dist_az(0, az_BW_smear);
-        std::normal_distribution<double> dist_zen(0, zen_BW_smear);
-        
-        // Get the Gaussian smear values
-        double az_smear  = dist_az(RN_engine_az);
-        double zen_smear = dist_zen(RN_engine_zen);
-
-        double az_samp = az.at(RN_indx)+az_smear;
-        double zen_samp = zen.at(RN_indx)+zen_smear;
         
         // Fill histogram
         hist->Fill(az_samp, zen_samp);
@@ -137,7 +187,7 @@ void RandomGenerator(){
     
     TVector3 dir;
 
-    for (int i = 0; i < 1e7; i++){
+    for (int i = 0; i < 1e6; i++){
         double zenith  = 0.;
         double azimuth = 0.;
         hist->GetRandom2(azimuth, zenith);
@@ -162,17 +212,17 @@ void RandomGenerator(){
     // TCanvas *c = new TCanvas();
     // hist_root->Draw("colz");
 
-    TCanvas *cXY = new TCanvas();
-    histXY->Draw("colz");
+    // TCanvas *cXY = new TCanvas();
+    // histXY->Draw("colz");
 
     TCanvas *cXZ = new TCanvas();
     histXZ->Draw("colz");
 
-    TCanvas *cYZ = new TCanvas();
-    histYZ->Draw("colz");
+    // TCanvas *cYZ = new TCanvas();
+    // histYZ->Draw("colz");
 
-    TCanvas *c2 = new TCanvas();
-    hist->Draw("colz");
+    // TCanvas *c2 = new TCanvas();
+    // hist->Draw("colz");
     
 
     // File pointer
@@ -236,16 +286,16 @@ void RandomGenerator(){
 
     GenerateRandom(intensity, beta, alpha, azimuth_bins, zenith_bins, hist_cpp2, histXY_cpp2, histXZ_cpp2, histYZ_cpp2);
 
-    TCanvas *c4 = new TCanvas();
-    hist_cpp2->Draw("colz");
+    // TCanvas *c4 = new TCanvas();
+    // hist_cpp2->Draw("colz");
 
-    TCanvas *cXY_cpp2 = new TCanvas();
-    histXY_cpp2->Draw("colz");
+    // TCanvas *cXY_cpp2 = new TCanvas();
+    // histXY_cpp2->Draw("colz");
 
     TCanvas *cXZ_cpp2 = new TCanvas();
     histXZ_cpp2->Draw("colz");
 
-    TCanvas *cYZ_cpp2 = new TCanvas();
-    histYZ_cpp2->Draw("colz");
+    // TCanvas *cYZ_cpp2 = new TCanvas();
+    // histYZ_cpp2->Draw("colz");
 
 }
