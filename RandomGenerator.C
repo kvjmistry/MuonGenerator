@@ -32,7 +32,7 @@ std::vector<double> GetBinWidths(std::vector<double> bins){
 
 }
 
-void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::vector<double> zen, std::vector<double> az_edges, std::vector<double> zen_edges, TH2D* hist, TH2D* histXY, TH2D* histXZ, TH2D* histYZ){
+void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::vector<double> zen, std::vector<double> az_edges, std::vector<double> zen_edges, TH2D* hist, TH2D* histXY, TH2D* histXZ, TH2D* histYZ, TH1D* histZ){
 
     gStyle->SetOptStat(0);
 
@@ -53,7 +53,7 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
 
     // Rotate the azimuth and zenith
     TRotation *rPhi = new TRotation();
-    rPhi->RotateY(-140* pi/180);
+    rPhi->RotateY(-150* pi/180);
 
     
     std::vector<double> az_BW  = GetBinWidths(az_edges);
@@ -157,6 +157,7 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
         histXY->Fill(dir.X(), dir.Y());
         histXZ->Fill(dir.X(), dir.Z());
         histYZ->Fill(dir.Y(), dir.Z());
+        histZ->Fill(dir.Z());
 
         index++;
 
@@ -183,7 +184,7 @@ void RandomGenerator(){
 
     // Rotate the azimuth and zenith
     TRotation *rPhi = new TRotation();
-    rPhi->RotateY(-140*pi/180);
+    rPhi->RotateY(-150*pi/180);
     
     TVector3 dir;
 
@@ -209,8 +210,8 @@ void RandomGenerator(){
 
     }
 
-    // TCanvas *c = new TCanvas();
-    // hist_root->Draw("colz");
+    TCanvas *c = new TCanvas();
+    hist_root->Draw("colz");
 
     // TCanvas *cXY = new TCanvas();
     // histXY->Draw("colz");
@@ -279,23 +280,31 @@ void RandomGenerator(){
     double* edges_azimuth = &azimuth_bins[0]; // Cast to an array 
 
 
-    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
+    // TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
+    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", 50, 0, 2*pi, 50, 0, pi/2);
     TH2D* histXY_cpp2 = new TH2D("histXY_cpp2", ";X; Y", 100, -1, 1 , 50, -1, 0 );
     TH2D* histXZ_cpp2 = new TH2D("histXZ_cpp2", ";X; Z", 100, -1, 1 , 100, -1, 1 );
     TH2D* histYZ_cpp2 = new TH2D("histYZ_cpp2", ";Y; Z", 50, -1, 0 , 100, -1, 1 );
 
-    GenerateRandom(intensity, beta, alpha, azimuth_bins, zenith_bins, hist_cpp2, histXY_cpp2, histXZ_cpp2, histYZ_cpp2);
+    TH1D* histZ_cpp2 = new TH1D("histZ_cpp2", ";Z; Entries", 75, -1, 1 );
 
-    // TCanvas *c4 = new TCanvas();
-    // hist_cpp2->Draw("colz");
+    GenerateRandom(intensity, beta, alpha, azimuth_bins, zenith_bins, hist_cpp2, histXY_cpp2, histXZ_cpp2, histYZ_cpp2, histZ_cpp2);
+
+    TCanvas *c4 = new TCanvas();
+    hist_cpp2->Draw("colz");
 
     // TCanvas *cXY_cpp2 = new TCanvas();
     // histXY_cpp2->Draw("colz");
 
     TCanvas *cXZ_cpp2 = new TCanvas();
+    // gStyle->SetPalette(kViridis);
+    // cXZ_cpp2->SetLogz();
     histXZ_cpp2->Draw("colz");
 
     // TCanvas *cYZ_cpp2 = new TCanvas();
     // histYZ_cpp2->Draw("colz");
+
+    TCanvas *cZ_cpp2 = new TCanvas();
+    histZ_cpp2->Draw("hist");
 
 }
