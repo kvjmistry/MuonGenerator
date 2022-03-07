@@ -2,3 +2,6 @@
 *.pkl
 MuonAnaAllRuns.csv
 SimulatedMuonsProposalMCEq.csv
+*.h5
+*.pdf
+*.png

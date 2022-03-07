@@ -229,10 +229,10 @@ void RandomGenerator(){
     // File pointer
     
     // Simulated muons from MCeQ
-    std::ifstream fin("SimulatedMuonsProposalMCEq.csv");
+    // std::ifstream fin("SimulatedMuonsProposalMCEq.csv");
     
     // Note these are equivalent!!
-    // std::ifstream fin("MeasuredMuonsFromData.csv");
+    std::ifstream fin("MeasuredMuonsFromData.csv");
     // std::ifstream fin("MuonAnaAllRuns.csv");
     
     // Check if file has opened properly
