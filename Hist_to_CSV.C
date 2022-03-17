@@ -1,4 +1,5 @@
 #include "TH2.h"
+#include "TArray.h"
 #include <iostream>
 
 
@@ -7,12 +8,29 @@ void Hist_to_CSV(){
 
     double pi = 3.14159;
 
+    // std::string mode = "data";
+    std::string mode = "sim";
+
+    double corr_factor = pi; // choose 1 or pi
+    int y_cut_off = 1;
+    TFile *f;
+
+    if (mode == "data"){
+        f =  (TFile*)TFile::Open("MuonAnaAllRuns.root");
+    }
+    else {
+        f =  (TFile*)TFile::Open("SimulatedMuonFile.root");
+        corr_factor = 1.0;
+        y_cut_off = 1;
+    }
+
     // Load in the histogram
-    TFile f("MuonAnaAllRuns.root");
+    // TFile f("MuonAnaAllRuns.root");
+    
     TH2F *hist;
-    f.GetObject("za", hist);
+    f->GetObject("za", hist);
     hist->SetDirectory(0);
-    f.Close();
+    f->Close();
 
     std::vector<double> weights = {}; // Intensity in a given azimuth/zenith Bin
     std::vector<double> azimuth = {}; // List of Azimuth values
@@ -21,38 +39,69 @@ void Hist_to_CSV(){
     std::vector<double> zenith_bins = {};  // List of Zenith bin edges
 
     
-    // Histogram for testing if random number generator is working
-    TH2D* hist_cpp = new TH2D("hist_cpp", ";Azimuth; Zenith", hist->GetNbinsX(), 0, 2.0*pi ,hist->GetNbinsY(), 0, 0.5*pi);
 
+    TArrayD* Ax_bins = (TArrayD*) hist->GetXaxis()->GetXbins();
+    double xbins[hist->GetNbinsX()];
+
+    for (unsigned int i =0; i < Ax_bins->GetSize(); i++){
+        xbins[i] = Ax_bins->GetAt(i);
+    }
+
+    TArrayD* Ay_bins = (TArrayD*) hist->GetYaxis()->GetXbins();
+    double ybins[hist->GetNbinsX()];
+
+    for (unsigned int i =0; i < Ay_bins->GetSize(); i++){
+        ybins[i] = Ay_bins->GetAt(i);
+    }
+    
+    // Histogram for testing if random number generator is working
+    TH2D* hist_cpp;
+
+    if (mode == "data"){
+        hist_cpp = new TH2D("hist_cpp", ";Azimuth; Zenith", hist->GetNbinsX(), 0, 2.0*pi ,hist->GetNbinsY(), 0, 0.5*pi);
+    }
+    else {
+        hist_cpp = new TH2D("hist_cpp", ";Azimuth; Zenith", hist->GetNbinsX(), xbins ,hist->GetNbinsY(), ybins);
+    }
+    
+     
     // Get Bin Weights, azimuth and zenith values into a vector
     for (unsigned int row = 1; row < hist->GetNbinsX()+1; row++){
-        for (unsigned int col = 2; col < hist->GetNbinsY()+1; col++){
-            weights.push_back(hist->GetBinContent(row, col));
-            azimuth.push_back(hist->GetXaxis()->GetBinCenter(row)*pi);
-            zenith.push_back(hist->GetYaxis()->GetBinCenter(col)*pi);
+        for (unsigned int col = y_cut_off; col < hist->GetNbinsY()+1; col++){
+            weights.push_back(hist->GetBinContent(row, col) / (hist->GetXaxis()->GetBinWidth(row) * hist->GetYaxis()->GetBinWidth(col) ));
+            azimuth.push_back(hist->GetXaxis()->GetBinCenter(row)*corr_factor);
+            zenith.push_back(hist->GetYaxis()->GetBinCenter(col)*corr_factor);
 
             if (row == 1){
-                zenith_bins.push_back(hist->GetYaxis()->GetBinLowEdge(col)*pi);
+                zenith_bins.push_back(hist->GetYaxis()->GetBinLowEdge(col)*corr_factor);
                 // std::cout << hist->GetYaxis()->GetBinLowEdge(col+1)<< std::endl;
 
                 // Add the final bin edge
                 if (col == hist->GetNbinsY())
-                    zenith_bins.push_back(hist->GetYaxis()->GetBinLowEdge(col+1)*pi);
+                    zenith_bins.push_back(hist->GetYaxis()->GetBinLowEdge(col+1)*corr_factor);
                 
             }
 
         }
 
-        azimuth_bins.push_back(hist->GetXaxis()->GetBinLowEdge(row)*pi);
+        azimuth_bins.push_back(hist->GetXaxis()->GetBinLowEdge(row)*corr_factor);
 
         // Add the final bin edge
         if (row == hist->GetNbinsX())
-            azimuth_bins.push_back(hist->GetXaxis()->GetBinLowEdge(row+1)*pi);
+            azimuth_bins.push_back(hist->GetXaxis()->GetBinLowEdge(row+1)*corr_factor);
 
     }
 
     std::ofstream myfile;
-    myfile.open ("MuonAnaAllRuns.csv");
+
+    if (mode == "data"){
+         myfile.open ("MuonAnaAllRuns.csv");
+    }
+    else {
+        myfile.open ("SimulatedMuonsProposalMCEq.csv");
+    }
+
+   
 
     for (int i = 0; i < weights.size(); i++){
         myfile << weights.at(i) << "," << azimuth.at(i) << ","<< zenith.at(i)<< "\n";
@@ -72,8 +121,9 @@ void Hist_to_CSV(){
         hist_cpp->Fill(azimuth.at(i), zenith.at(i), weights.at(i));
     }
 
+    gStyle->SetOptStat(0);
     TCanvas *c = new TCanvas();
-    hist_cpp->Divide(hist);
+    // hist_cpp->Divide(hist);
     hist_cpp->Draw("COLZ");
 
 

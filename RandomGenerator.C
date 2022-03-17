@@ -145,8 +145,6 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
                 invalid_evt = false;
         }
         
-        // Fill histogram
-        hist->Fill(az_samp, zen_samp);
 
         dir.SetX(sin(zen_samp) * sin(az_samp));
         dir.SetY(-cos(zen_samp));
@@ -154,10 +152,16 @@ void GenerateRandom(std::vector<double> weights, std::vector<double> az, std::ve
 
         dir *= *rPhi;
 
-        histXY->Fill(dir.X(), dir.Y());
-        histXZ->Fill(dir.X(), dir.Z());
-        histYZ->Fill(dir.Y(), dir.Z());
-        histZ->Fill(dir.Z());
+        // Fill histogram
+
+        // if (dir.X() < 0.4 && dir.X() > -0.2 && dir.Z() > -0.4 && dir.Z() < 0.2){
+            hist->Fill(az_samp, zen_samp);
+        
+            histXY->Fill(dir.X(), dir.Y());
+            histXZ->Fill(dir.X(), dir.Z());
+            histYZ->Fill(dir.Y(), dir.Z());
+            histZ->Fill(dir.Z());
+        // }
 
         index++;
 
@@ -171,12 +175,15 @@ void RandomGenerator(){
 
     // Load in the histogram
     TFile f("MuonAnaAllRuns.root");
+    // TFile f("SimulatedMuonFile.root");
     TH2F *hist;
     f.GetObject("za", hist);
     hist->SetDirectory(0);
     f.Close();
 
-    TH2D* hist_root = new TH2D("hist_root", ";Azimuth; Zenith", hist->GetNbinsX()+1,  0, 2*pi ,hist->GetNbinsY()+1, 0, 0.5*pi );
+    double y_high = hist->GetYaxis()->GetBinLowEdge(hist->GetNbinsY()+1);
+    double x_high = hist->GetXaxis()->GetBinLowEdge(hist->GetNbinsX()+1);
+    TH2D* hist_root = new TH2D("hist_root", ";Azimuth; Zenith", hist->GetNbinsX()+1,  0, x_high ,hist->GetNbinsY()+1, 0, y_high);
 
     TH2D* histXY = new TH2D("histXY", ";X; Y", 100, -1, 1 , 50, -1, 0 );
     TH2D* histXZ = new TH2D("histXZ", ";X; Z", 100, -1, 1 , 100, -1, 1 );
@@ -230,9 +237,10 @@ void RandomGenerator(){
     
     // Simulated muons from MCeQ
     // std::ifstream fin("SimulatedMuonsProposalMCEq.csv");
+    std::ifstream fin("SimulatedMuonFile.csv"); 
     
     // Note these are equivalent!!
-    std::ifstream fin("MeasuredMuonsFromData.csv");
+    // std::ifstream fin("MeasuredMuonsFromData.csv");
     // std::ifstream fin("MuonAnaAllRuns.csv");
     
     // Check if file has opened properly
@@ -280,8 +288,8 @@ void RandomGenerator(){
     double* edges_azimuth = &azimuth_bins[0]; // Cast to an array 
 
 
-    // TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
-    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", 50, 0, 2*pi, 50, 0, pi/2);
+    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
+    // TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", hist->GetNbinsX()+1,  0, x_high ,hist->GetNbinsY()+1, 0, y_high);
     TH2D* histXY_cpp2 = new TH2D("histXY_cpp2", ";X; Y", 100, -1, 1 , 50, -1, 0 );
     TH2D* histXZ_cpp2 = new TH2D("histXZ_cpp2", ";X; Z", 100, -1, 1 , 100, -1, 1 );
     TH2D* histYZ_cpp2 = new TH2D("histYZ_cpp2", ";Y; Z", 50, -1, 0 , 100, -1, 1 );
