@@ -5,3 +5,7 @@ SimulatedMuonsProposalMCEq.csv
 *.h5
 *.pdf
 *.png
+RandomGenerator_C.d
+RandomGenerator_C.so
+RandomGenerator_C_ACLiC_dict_rdict.pcm
+files/*

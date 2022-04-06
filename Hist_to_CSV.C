@@ -2,14 +2,16 @@
 #include "TArray.h"
 #include <iostream>
 
+double GetBinSmearValue(std::vector<double> bins, double sampVal, std::vector<double> BinWidths);
+
 
 // Convert root histogram to csv file
 void Hist_to_CSV(){
 
     double pi = 3.14159;
 
-    // std::string mode = "data";
-    std::string mode = "sim";
+    std::string mode = "data";
+    // std::string mode = "sim";
 
     double corr_factor = pi; // choose 1 or pi
     int y_cut_off = 1;
@@ -37,6 +39,12 @@ void Hist_to_CSV(){
     std::vector<double> zenith = {};  // List of Zenith values
     std::vector<double> azimuth_bins = {}; // List of Azimuth bin edges
     std::vector<double> zenith_bins = {};  // List of Zenith bin edges
+
+    std::vector<double> azimuth_BW = {}; // List of Azimuth bin widths
+    std::vector<double> zenith_BW  = {};  // List of Zenith bin widths
+
+    std::vector<double> azimuth_smear = {}; // List of Azimuth bin smear values
+    std::vector<double> zenith_smear  = {};  // List of Zenith bin smear values
 
     
 
@@ -92,6 +100,25 @@ void Hist_to_CSV(){
 
     }
 
+    // Get the bin widths to smear by
+    for (unsigned int bin = 1; bin < hist->GetNbinsX()+1; bin++){
+        azimuth_BW.push_back(hist->GetXaxis()->GetBinWidth(bin));
+    }
+
+    for (unsigned int bin = y_cut_off; bin < hist->GetNbinsY()+1; bin++){
+        zenith_BW.push_back(hist->GetYaxis()->GetBinWidth(bin));
+    }
+
+    // Azimuth smear values
+    for (int i = 0; i < azimuth.size(); i++){
+       azimuth_smear.push_back(GetBinSmearValue(azimuth_bins, azimuth.at(i), azimuth_BW));
+    }
+
+    // Zenith smear values
+    for (int i = 0; i < zenith.size(); i++){
+       zenith_smear.push_back(GetBinSmearValue(zenith_bins, zenith.at(i), zenith_BW));
+    }
+
     std::ofstream myfile;
 
     if (mode == "data"){
@@ -104,7 +131,7 @@ void Hist_to_CSV(){
    
 
     for (int i = 0; i < weights.size(); i++){
-        myfile << weights.at(i) << "," << azimuth.at(i) << ","<< zenith.at(i)<< "\n";
+        myfile << "value," << weights.at(i) << "," << azimuth.at(i) << ","<< zenith.at(i) << "," <<azimuth_smear.at(i) << "," << zenith_smear.at(i) <<  "\n";
     }
 
     for (int i = 0; i < zenith_bins.size(); i++){
@@ -126,5 +153,38 @@ void Hist_to_CSV(){
     // hist_cpp->Divide(hist);
     hist_cpp->Draw("COLZ");
 
+
+}
+
+
+double GetBinSmearValue(std::vector<double> bins, double sampVal, std::vector<double> BinWidths){
+
+  double smearVal{std::numeric_limits<double>::lowest()};
+
+  // Loop over the azimuth values and find the corresponding bin width to smear
+  for (int i = 0; i < bins.size()-1; i++){
+      
+      // Include last bin edge in check
+      if (smearVal == std::numeric_limits<double>::lowest() && i == bins.size()-2){
+        if (sampVal >= bins[i] && sampVal <= bins[i+1]){
+          
+            smearVal = BinWidths[i];
+            break;
+
+        }
+      }
+      else {
+
+        if (sampVal >= bins[i] && sampVal < bins[i+1]){
+            
+            smearVal = BinWidths[i];
+            break;
+
+        }
+      }
+
+  }
+
+  return smearVal;
 
 }

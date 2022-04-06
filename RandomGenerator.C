@@ -3,6 +3,12 @@
 #include "TH2.h"
 #include "TRotation.h"
 #include "TVector3.h"
+#include "TFile.h"
+#include "TCanvas.h"
+#include <iostream>
+#include "TStyle.h"
+#include <fstream>
+#include "CLHEP/Random/Random.h"
 
 /* 
 This code will read in a csv file containing muon events in zenith and azimuth
@@ -236,83 +242,99 @@ void RandomGenerator(){
     // File pointer
     
     // Simulated muons from MCeQ
-    // std::ifstream fin("SimulatedMuonsProposalMCEq.csv");
-    std::ifstream fin("SimulatedMuonFile.csv"); 
+    std::ifstream fin("SimulatedMuonsProposalMCEq.csv");
+    // std::ifstream fin("SimulatedMuonFile.csv"); 
     
     // Note these are equivalent!!
     // std::ifstream fin("MeasuredMuonsFromData.csv");
     // std::ifstream fin("MuonAnaAllRuns.csv");
     
+    std::string dist_name_ = "za";
+
     // Check if file has opened properly
     if (!fin.is_open())
         std::cout << "Error: Could not read in the input data CSV file" << std::endl;
   
-    // Read the Data from the file 
-    std::string s_intensity, s_beta, s_alpha;
-    std::vector<double> intensity, beta, alpha;
-    std::vector<double> azimuth_bins = {}; // List of Azimuth bin edges
-    std::vector<double> zenith_bins = {};  // List of Zenith bin edges
-  
+    // Read the Data from the file as strings
+    std::string s_header, s_flux, s_azimuth, s_zenith, s_energy;
+    std::string s_azimuth_smear, s_zenith_smear, s_energy_smear;
+    std::vector<double> flux_, azimuths_, zeniths_, energies_; ///< Values of flux, azimuth and zenith from file
+    std::vector<double> azimuth_smear_; ///< List of Azimuth bin smear values
+    std::vector<double> zenith_smear_;  ///< List of Zenith bin smear values
+    std::vector<double> energy_smear_;  ///< List of Energy bin smear values
+
     // Loop over the lines in the file and add the values to a vector
     while (fin.peek()!=EOF) {
-  
-        std::getline(fin, s_intensity, ',');
 
-        // Load in alpha/zenith bin edges
-        if (s_intensity == "zenith"){
-            std::getline(fin, s_alpha, '\n');
-            zenith_bins.push_back(stod(s_alpha));
-        }
-        // Load in beta/azimuth bin edges
-        else if (s_intensity == "azimuth"){
-            std::getline(fin, s_beta, '\n');
-            azimuth_bins.push_back(stod(s_beta));
-        }
-        // Load in the histogram values
-        else {
-            std::getline(fin, s_beta, ',');
-            std::getline(fin, s_alpha, '\n');
+        std::getline(fin, s_header, ',');
 
-            intensity.push_back(stod(s_intensity));
-            beta.push_back(stod(s_beta));
-            alpha.push_back(stod(s_alpha));
-        }
+        // Angle input only
+        if (s_header == "value" && dist_name_ == "za"){
+            std::getline(fin, s_flux, ',');
+            std::getline(fin, s_azimuth, ',');
+            std::getline(fin, s_zenith, ',');
+            std::getline(fin, s_azimuth_smear, ',');
+            std::getline(fin, s_zenith_smear, '\n');
 
+            flux_.push_back(stod(s_flux));
+            azimuths_.push_back(stod(s_azimuth));
+            zeniths_.push_back(stod(s_zenith));
+            azimuth_smear_.push_back(stod(s_azimuth_smear));
+            zenith_smear_.push_back(stod(s_zenith_smear));
+        }
+        // Angle + Energy input
+        if (s_header == "value" && dist_name_ == "zae"){
+            std::getline(fin, s_flux, ',');
+            std::getline(fin, s_azimuth, ',');
+            std::getline(fin, s_zenith, ',');
+            std::getline(fin, s_energy, ',');
+            std::getline(fin, s_azimuth_smear, ',');
+            std::getline(fin, s_zenith_smear, ',');
+            std::getline(fin, s_energy_smear, '\n');
+
+            flux_.push_back(stod(s_flux));
+            azimuths_.push_back(stod(s_azimuth));
+            zeniths_.push_back(stod(s_zenith));
+            energies_.push_back(stod(s_energy));
+            azimuth_smear_.push_back(stod(s_azimuth_smear));
+            zenith_smear_.push_back(stod(s_zenith_smear));
+            energy_smear_.push_back(stod(s_energy_smear));
+        }
 
     }
 
-    int const nbins_zeni = zenith_bins.size()-1;
-    double* edges_zeni = &zenith_bins[0]; // Cast to an array
+    // int const nbins_zeni = zenith_bins.size()-1;
+    // double* edges_zeni = &zenith_bins[0]; // Cast to an array
     
-    int const nbins_azimuth = azimuth_bins.size()-1;
-    double* edges_azimuth = &azimuth_bins[0]; // Cast to an array 
+    // int const nbins_azimuth = azimuth_bins.size()-1;
+    // double* edges_azimuth = &azimuth_bins[0]; // Cast to an array 
 
 
-    TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
-    // TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", hist->GetNbinsX()+1,  0, x_high ,hist->GetNbinsY()+1, 0, y_high);
-    TH2D* histXY_cpp2 = new TH2D("histXY_cpp2", ";X; Y", 100, -1, 1 , 50, -1, 0 );
-    TH2D* histXZ_cpp2 = new TH2D("histXZ_cpp2", ";X; Z", 100, -1, 1 , 100, -1, 1 );
-    TH2D* histYZ_cpp2 = new TH2D("histYZ_cpp2", ";Y; Z", 50, -1, 0 , 100, -1, 1 );
+    // TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", nbins_azimuth, edges_azimuth , nbins_zeni, edges_zeni);
+    // // TH2D* hist_cpp2   = new TH2D("hist_cpp2", ";Azimuth; Zenith", hist->GetNbinsX()+1,  0, x_high ,hist->GetNbinsY()+1, 0, y_high);
+    // TH2D* histXY_cpp2 = new TH2D("histXY_cpp2", ";X; Y", 100, -1, 1 , 50, -1, 0 );
+    // TH2D* histXZ_cpp2 = new TH2D("histXZ_cpp2", ";X; Z", 100, -1, 1 , 100, -1, 1 );
+    // TH2D* histYZ_cpp2 = new TH2D("histYZ_cpp2", ";Y; Z", 50, -1, 0 , 100, -1, 1 );
 
-    TH1D* histZ_cpp2 = new TH1D("histZ_cpp2", ";Z; Entries", 75, -1, 1 );
+    // TH1D* histZ_cpp2 = new TH1D("histZ_cpp2", ";Z; Entries", 75, -1, 1 );
 
-    GenerateRandom(intensity, beta, alpha, azimuth_bins, zenith_bins, hist_cpp2, histXY_cpp2, histXZ_cpp2, histYZ_cpp2, histZ_cpp2);
+    // GenerateRandom(flux_, azimuths_, zeniths_, azimuth_smear_, zenith_smear_, hist_cpp2, histXY_cpp2, histXZ_cpp2, histYZ_cpp2, histZ_cpp2);
 
-    TCanvas *c4 = new TCanvas();
-    hist_cpp2->Draw("colz");
+    // TCanvas *c4 = new TCanvas();
+    // hist_cpp2->Draw("colz");
 
-    // TCanvas *cXY_cpp2 = new TCanvas();
-    // histXY_cpp2->Draw("colz");
+    // // TCanvas *cXY_cpp2 = new TCanvas();
+    // // histXY_cpp2->Draw("colz");
 
-    TCanvas *cXZ_cpp2 = new TCanvas();
-    // gStyle->SetPalette(kViridis);
-    // cXZ_cpp2->SetLogz();
-    histXZ_cpp2->Draw("colz");
+    // TCanvas *cXZ_cpp2 = new TCanvas();
+    // // gStyle->SetPalette(kViridis);
+    // // cXZ_cpp2->SetLogz();
+    // histXZ_cpp2->Draw("colz");
 
-    // TCanvas *cYZ_cpp2 = new TCanvas();
-    // histYZ_cpp2->Draw("colz");
+    // // TCanvas *cYZ_cpp2 = new TCanvas();
+    // // histYZ_cpp2->Draw("colz");
 
-    TCanvas *cZ_cpp2 = new TCanvas();
-    histZ_cpp2->Draw("hist");
+    // TCanvas *cZ_cpp2 = new TCanvas();
+    // histZ_cpp2->Draw("hist");
 
 }
