@@ -10,18 +10,18 @@ void Hist_to_CSV(){
 
     double pi = 3.14159;
 
-    std::string mode = "data";
-    // std::string mode = "sim";
+    // std::string mode = "data";
+    std::string mode = "sim";
 
     double corr_factor = pi; // choose 1 or pi
     int y_cut_off = 1;
     TFile *f;
 
     if (mode == "data"){
-        f =  (TFile*)TFile::Open("MuonAnaAllRuns.root");
+        f =  (TFile*)TFile::Open("files/MuonAnaAllRuns.root");
     }
     else {
-        f =  (TFile*)TFile::Open("SimulatedMuonFile.root");
+        f =  (TFile*)TFile::Open("files/SimulatedMuonFile.root");
         corr_factor = 1.0;
         y_cut_off = 1;
     }
@@ -111,21 +111,21 @@ void Hist_to_CSV(){
 
     // Azimuth smear values
     for (int i = 0; i < azimuth.size(); i++){
-       azimuth_smear.push_back(GetBinSmearValue(azimuth_bins, azimuth.at(i), azimuth_BW));
+       azimuth_smear.push_back(2*GetBinSmearValue(azimuth_bins, azimuth.at(i), azimuth_BW));
     }
 
     // Zenith smear values
     for (int i = 0; i < zenith.size(); i++){
-       zenith_smear.push_back(GetBinSmearValue(zenith_bins, zenith.at(i), zenith_BW));
+       zenith_smear.push_back(2*GetBinSmearValue(zenith_bins, zenith.at(i), zenith_BW));
     }
 
     std::ofstream myfile;
 
     if (mode == "data"){
-         myfile.open ("MuonAnaAllRuns.csv");
+         myfile.open ("files/MuonAnaAllRuns.csv");
     }
     else {
-        myfile.open ("SimulatedMuonsProposalMCEq.csv");
+        myfile.open ("files/SimulatedMuonsProposalMCEq.csv");
     }
 
    
